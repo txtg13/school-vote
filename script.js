@@ -47,7 +47,7 @@ function rehash(addr, key) {
     return (addr + key) % M;
 }
 
-// ===================== 从云端加载数据，构建本地哈希表 =====================
+// ===================== 从云端加载数据，构建本地哈希表（已修复bug） =====================
 async function loadDataFromCloud() {
     try {
         const res = await fetch(`${BACKEND_URL}/api/students`);
@@ -62,20 +62,22 @@ async function loadDataFromCloud() {
         hashTable = new Array(HASH_LEN).fill(null);
         studentCount = result.data.length;
         
-        // 把云端数据按哈希算法重新填入本地哈希表（保证哈希结构正确）
+        // 重新模拟插入过程，100%正确还原哈希表结构
         result.data.forEach(item => {
+            const key = item.k;
+            let addr = hashFunc(key);
+            let searchLen = 1;
+            
+            // 用再哈希法找空位，和插入逻辑完全一致
+            while (hashTable[addr] !== null) {
+                addr = rehash(addr, key);
+                searchLen++;
+            }
+            
             const node = new HashNode(item.py, item.major, item.grade_year, item.story);
             node.k = item.k;
             node.vote = item.vote;
-            node.si = item.si;
-            
-            // 按哈希算法找到正确位置
-            let addr = hashFunc(item.k);
-            let si = 1;
-            while (hashTable[addr] !== null && si < item.si) {
-                addr = rehash(addr, item.k);
-                si++;
-            }
+            node.si = searchLen;
             hashTable[addr] = node;
         });
         return true;
