@@ -13,9 +13,9 @@
         <!-- 功能菜单 -->
         <div class="menu">
             <button class="menu-btn active" data-tab="vote">提名与投票</button>
-            <button class="menu-btn" data-tab="search">查询学生信息</button>
-            <button class="menu-btn" data-tab="all">全部票数</button>
-            <button class="menu-btn" data-tab="rank">排行榜</button>
+            <button class="menu-btn" data-tab="search">学生信息查询</button>
+            <button class="menu-btn" data-tab="all">全量票数统计</button>
+            <button class="menu-btn" data-tab="rank">十大青年排行榜</button>
             <button class="menu-btn" data-tab="hash">哈希表结构</button>
             <button class="menu-btn" data-tab="log">操作日志</button>
         </div>
@@ -23,36 +23,62 @@
         <!-- 1. 提名/投票面板 -->
         <div class="tab-panel active" id="vote">
             <div class="form-group">
-                <label>学生姓名（拼音）</label>
-                <input type="text" id="voteName" placeholder="例如：zhangsan">
+                <label>学生姓名</label>
+                <input type="text" id="voteName" placeholder="请输入候选人中文姓名">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>所属专业</label>
+                    <select id="voteMajor">
+                        <option value="软件工程">软件工程</option>
+                        <option value="网络工程">网络工程</option>
+                        <option value="人工智能">人工智能</option>
+                        <option value="计算机科学与技术">计算机科学与技术</option>
+                        <option value="数字媒体技术">数字媒体技术</option>
+                        <option value="数据科学与大数据技术">数据科学与大数据技术</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>入学年级</label>
+                    <input type="number" id="voteGrade" min="2020" max="2030" placeholder="如：2023">
+                </div>
             </div>
             <div class="form-group">
-                <label>班级（1-10之间的数字）</label>
-                <input type="number" id="voteGrade" min="1" max="10" placeholder="请输入1-10">
+                <label>突出事迹（选填）</label>
+                <textarea id="voteStory" rows="3" placeholder="简要介绍该同学的优秀事迹、获奖情况等"></textarea>
             </div>
-            <div class="form-group">
-                <label>突出事迹（提名新同学时填写）</label>
-                <textarea id="voteStory" rows="3" placeholder="请输入该同学的突出事迹"></textarea>
-            </div>
-            <button class="submit-btn" onclick="handleVote()">提交提名/投票</button>
+            <button class="submit-btn" onclick="handleVote()">确认提交</button>
             <div class="result" id="voteResult"></div>
         </div>
 
         <!-- 2. 查询学生信息面板 -->
         <div class="tab-panel" id="search">
             <div class="form-group">
-                <label>学生姓名（拼音）</label>
-                <input type="text" id="searchName" placeholder="请输入学生姓名拼音">
+                <label>学生姓名</label>
+                <input type="text" id="searchName" placeholder="请输入要查询的学生姓名">
             </div>
-            <div class="form-group">
-                <label>班级</label>
-                <input type="number" id="searchGrade" min="1" max="10" placeholder="请输入班级号">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>所属专业</label>
+                    <select id="searchMajor">
+                        <option value="软件工程">软件工程</option>
+                        <option value="网络工程">网络工程</option>
+                        <option value="人工智能">人工智能</option>
+                        <option value="计算机科学与技术">计算机科学与技术</option>
+                        <option value="数字媒体技术">数字媒体技术</option>
+                        <option value="数据科学与大数据技术">数据科学与大数据技术</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>入学年级</label>
+                    <input type="number" id="searchGrade" min="2020" max="2030" placeholder="如：2023">
+                </div>
             </div>
-            <button class="submit-btn" onclick="handleSearch()">查询信息</button>
+            <button class="submit-btn" onclick="handleSearch()">立即查询</button>
             <div class="result" id="searchResult"></div>
         </div>
 
-        <!-- 3. 全部票数面板 -->
+        <!-- 3. 全量票数统计面板 -->
         <div class="tab-panel" id="all">
             <div class="filter-bar">
                 <div class="filter-item">
@@ -60,30 +86,27 @@
                     <input type="text" id="filterName" placeholder="输入姓名关键词" oninput="showAllVotes()">
                 </div>
                 <div class="filter-item">
-                    <label>班级筛选</label>
-                    <select id="filterGrade" onchange="showAllVotes()">
-                        <option value="0">全部班级</option>
-                        <option value="1">1班</option>
-                        <option value="2">2班</option>
-                        <option value="3">3班</option>
-                        <option value="4">4班</option>
-                        <option value="5">5班</option>
-                        <option value="6">6班</option>
-                        <option value="7">7班</option>
-                        <option value="8">8班</option>
-                        <option value="9">9班</option>
-                        <option value="10">10班</option>
+                    <label>专业筛选</label>
+                    <select id="filterMajor" onchange="showAllVotes()">
+                        <option value="">全部专业</option>
+                        <option value="软件工程">软件工程</option>
+                        <option value="网络工程">网络工程</option>
+                        <option value="人工智能">人工智能</option>
+                        <option value="计算机科学与技术">计算机科学与技术</option>
+                        <option value="数字媒体技术">数字媒体技术</option>
+                        <option value="数据科学与大数据技术">数据科学与大数据技术</option>
                     </select>
                 </div>
-                <button class="reset-btn" onclick="resetSystem()">重置系统</button>
+                <button class="reset-btn" onclick="resetSystem()">系统重置</button>
             </div>
-            <h3>全体提名学生票数列表</h3>
+            <h3>全量提名学生票数统计</h3>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>班级</th>
+                        <th>专业</th>
+                        <th>年级</th>
                         <th>姓名</th>
-                        <th>票数</th>
+                        <th>当前票数</th>
                         <th>查找长度</th>
                         <th>操作</th>
                     </tr>
@@ -96,13 +119,14 @@
 
         <!-- 4. 排行榜面板 -->
         <div class="tab-panel" id="rank">
-            <h3>票数TOP10排行榜</h3>
+            <h3>十大优秀青年排行榜</h3>
             <button class="submit-btn" onclick="showRank()">刷新排行榜</button>
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>排名</th>
-                        <th>班级</th>
+                        <th>专业</th>
+                        <th>年级</th>
                         <th>姓名</th>
                         <th>票数</th>
                     </tr>
@@ -112,7 +136,7 @@
             </table>
         </div>
 
-        <!-- 5. 哈希表结构面板（核心加分项） -->
+        <!-- 5. 哈希表结构面板 -->
         <div class="tab-panel" id="hash">
             <h3>哈希表底层存储结构</h3>
             <div class="hash-info" id="hashInfo"></div>
@@ -139,8 +163,19 @@
         <div class="modal-content">
             <h3>编辑学生信息</h3>
             <div class="form-group">
-                <label>班级</label>
-                <input type="number" id="editGrade" min="1" max="10">
+                <label>所属专业</label>
+                <select id="editMajor">
+                    <option value="软件工程">软件工程</option>
+                    <option value="网络工程">网络工程</option>
+                    <option value="人工智能">人工智能</option>
+                    <option value="计算机科学与技术">计算机科学与技术</option>
+                    <option value="数字媒体技术">数字媒体技术</option>
+                    <option value="数据科学与大数据技术">数据科学与大数据技术</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>入学年级</label>
+                <input type="number" id="editGrade" min="2020" max="2030">
             </div>
             <div class="form-group">
                 <label>突出事迹</label>
