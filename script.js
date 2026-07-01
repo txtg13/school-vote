@@ -294,10 +294,33 @@ function handleSearch() {
     }
 }
 
+// ===================== 全量票数统计（新增排序功能） =====================
 function showAllVotes() {
     const filterName = document.getElementById('filterName').value.trim();
     const filterMajor = document.getElementById('filterMajor').value;
-    const { list, asl, loadFactor, totalConflict } = getAllStudents(filterName, filterMajor);
+    const sortBy = document.getElementById('sortBy').value;
+    let { list, asl, loadFactor, totalConflict } = getAllStudents(filterName, filterMajor);
+    
+    // 根据选择的方式排序
+    list.sort((a, b) => {
+        switch(sortBy) {
+            case 'vote-desc':
+                return b.data.vote - a.data.vote;
+            case 'vote-asc':
+                return a.data.vote - b.data.vote;
+            case 'major':
+                return a.data.major.localeCompare(b.data.major, 'zh-CN');
+            case 'grade-desc':
+                return b.data.gradeYear - a.data.gradeYear;
+            case 'grade-asc':
+                return a.data.gradeYear - b.data.gradeYear;
+            case 'name':
+                return a.data.py.localeCompare(b.data.py, 'zh-CN');
+            default:
+                return b.data.vote - a.data.vote;
+        }
+    });
+    
     const tbody = document.getElementById('allTableBody');
     tbody.innerHTML = '';
     
