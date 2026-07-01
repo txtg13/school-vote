@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园十大优秀青年评比系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>校园十大优秀青年评比系统</h1>
+        
+        <!-- 功能菜单 -->
+        <div class="menu">
+            <button class="menu-btn active" data-tab="vote">提名与投票</button>
+            <button class="menu-btn" data-tab="search">查询学生信息</button>
+            <button class="menu-btn" data-tab="all">全部票数</button>
+            <button class="menu-btn" data-tab="rank">排行榜</button>
+            <button class="menu-btn" data-tab="hash">哈希表结构</button>
+            <button class="menu-btn" data-tab="log">操作日志</button>
+        </div>
+
+        <!-- 1. 提名/投票面板 -->
+        <div class="tab-panel active" id="vote">
+            <div class="form-group">
+                <label>学生姓名（拼音）</label>
+                <input type="text" id="voteName" placeholder="例如：zhangsan">
+            </div>
+            <div class="form-group">
+                <label>班级（1-10之间的数字）</label>
+                <input type="number" id="voteGrade" min="1" max="10" placeholder="请输入1-10">
+            </div>
+            <div class="form-group">
+                <label>突出事迹（提名新同学时填写）</label>
+                <textarea id="voteStory" rows="3" placeholder="请输入该同学的突出事迹"></textarea>
+            </div>
+            <button class="submit-btn" onclick="handleVote()">提交提名/投票</button>
+            <div class="result" id="voteResult"></div>
+        </div>
+
+        <!-- 2. 查询学生信息面板 -->
+        <div class="tab-panel" id="search">
+            <div class="form-group">
+                <label>学生姓名（拼音）</label>
+                <input type="text" id="searchName" placeholder="请输入学生姓名拼音">
+            </div>
+            <div class="form-group">
+                <label>班级</label>
+                <input type="number" id="searchGrade" min="1" max="10" placeholder="请输入班级号">
+            </div>
+            <button class="submit-btn" onclick="handleSearch()">查询信息</button>
+            <div class="result" id="searchResult"></div>
+        </div>
+
+        <!-- 3. 全部票数面板 -->
+        <div class="tab-panel" id="all">
+            <div class="filter-bar">
+                <div class="filter-item">
+                    <label>姓名搜索</label>
+                    <input type="text" id="filterName" placeholder="输入姓名关键词" oninput="showAllVotes()">
+                </div>
+                <div class="filter-item">
+                    <label>班级筛选</label>
+                    <select id="filterGrade" onchange="showAllVotes()">
+                        <option value="0">全部班级</option>
+                        <option value="1">1班</option>
+                        <option value="2">2班</option>
+                        <option value="3">3班</option>
+                        <option value="4">4班</option>
+                        <option value="5">5班</option>
+                        <option value="6">6班</option>
+                        <option value="7">7班</option>
+                        <option value="8">8班</option>
+                        <option value="9">9班</option>
+                        <option value="10">10班</option>
+                    </select>
+                </div>
+                <button class="reset-btn" onclick="resetSystem()">重置系统</button>
+            </div>
+            <h3>全体提名学生票数列表</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>班级</th>
+                        <th>姓名</th>
+                        <th>票数</th>
+                        <th>查找长度</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="allTableBody">
+                </tbody>
+            </table>
+            <div class="asl" id="aslResult"></div>
+        </div>
+
+        <!-- 4. 排行榜面板 -->
+        <div class="tab-panel" id="rank">
+            <h3>票数TOP10排行榜</h3>
+            <button class="submit-btn" onclick="showRank()">刷新排行榜</button>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>班级</th>
+                        <th>姓名</th>
+                        <th>票数</th>
+                    </tr>
+                </thead>
+                <tbody id="rankTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 5. 哈希表结构面板（核心加分项） -->
+        <div class="tab-panel" id="hash">
+            <h3>哈希表底层存储结构</h3>
+            <div class="hash-info" id="hashInfo"></div>
+            <div class="hash-grid" id="hashGrid"></div>
+            <div class="hash-legend">
+                <span class="legend-item"><span class="box empty"></span>空槽位</span>
+                <span class="legend-item"><span class="box normal"></span>无冲突</span>
+                <span class="legend-item"><span class="box conflict"></span>有冲突</span>
+            </div>
+        </div>
+
+        <!-- 6. 操作日志面板 -->
+        <div class="tab-panel" id="log">
+            <div class="filter-bar">
+                <h3>操作日志记录</h3>
+                <button class="reset-btn" onclick="clearLog()">清空日志</button>
+            </div>
+            <div class="log-list" id="logList"></div>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3>编辑学生信息</h3>
+            <div class="form-group">
+                <label>班级</label>
+                <input type="number" id="editGrade" min="1" max="10">
+            </div>
+            <div class="form-group">
+                <label>突出事迹</label>
+                <textarea id="editStory" rows="3"></textarea>
+            </div>
+            <div class="modal-btns">
+                <button class="cancel-btn" onclick="closeEditModal()">取消</button>
+                <button class="submit-btn" onclick="saveEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
