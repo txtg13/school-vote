@@ -1,39 +1,36 @@
-// ===================== 常量定义（和原课程设计C代码逻辑一致） =====================
+// ===================== 后端地址（已经帮你填好了） =====================
+const BACKEND_URL = "https://celebrated-consideration-production-f3d6.up.railway.app";
+
+// ===================== 常量定义（课程设计核心逻辑完全保留） =====================
 const M = 19;          // 哈希表模数
 const HASH_LEN = 20;   // 哈希表总长度
 const TOP_N = 10;      // 排行榜显示前10名
-const STORAGE_KEY = 'campus_vote_data';
 const LOG_KEY = 'campus_vote_log';
 
 // ===================== 数据结构定义 =====================
-// 哈希表节点：存储学生全部信息
 function HashNode(name, major, gradeYear, story) {
-    this.py = name;        // 学生姓名
-    this.k = 0;            // 哈希关键字（姓名Unicode编码之和）
-    this.major = major;    // 所属专业
-    this.gradeYear = gradeYear; // 入学年级
-    this.vote = 0;         // 得票数
-    this.si = 0;           // 查找长度
-    this.story = story;    // 突出事迹
+    this.py = name;
+    this.k = 0;
+    this.major = major;
+    this.gradeYear = gradeYear;
+    this.vote = 0;
+    this.si = 0;
+    this.story = story;
 }
 
-// 二叉排序树节点：用于排行榜排序
 function BSTNode(hashNode) {
     this.hashNode = hashNode;
-    this.k = hashNode.vote; // 排序关键字：票数
-    this.name = hashNode.py; // 次要排序关键字：姓名
-    this.lchild = null;     // 左孩子
-    this.rchild = null;     // 右孩子
+    this.k = hashNode.vote;
+    this.name = hashNode.py;
+    this.lchild = null;
+    this.rchild = null;
 }
 
-// 全局变量
 let hashTable = new Array(HASH_LEN).fill(null);
-let studentCount = 0; // 当前提名总人数
-let editIndex = -1; // 当前编辑的哈希表下标
+let studentCount = 0;
+let editIndex = -1;
 
-// ===================== 核心数据结构算法（课程设计考核重点，完全保留） =====================
-
-// 1. 计算哈希关键字：姓名字符Unicode编码之和（中文同样适用，原理不变）
+// ===================== 核心数据结构算法（完全保留） =====================
 function getKey(name) {
     let sum = 0;
     for (let i = 0; i < name.length; i++) {
@@ -42,38 +39,53 @@ function getKey(name) {
     return sum;
 }
 
-// 2. 哈希函数：关键字对M取模
 function hashFunc(key) {
     return key % M;
 }
 
-// 3. 冲突解决方法：再哈希法（步长为关键字本身）
 function rehash(addr, key) {
     return (addr + key) % M;
 }
 
-// ===================== 本地持久化存储 =====================
-// 保存数据到本地
-function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        hashTable: hashTable,
-        studentCount: studentCount
-    }));
-}
+// ===================== 从云端加载数据，构建本地哈希表 =====================
+async function loadDataFromCloud() {
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/students`);
+        const result = await res.json();
+        
+        if (!result.success) {
+            console.error('加载数据失败:', result.msg);
+            return false;
+        }
 
-// 从本地读取数据
-function loadData() {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (data) {
-        const obj = JSON.parse(data);
-        hashTable = obj.hashTable;
-        studentCount = obj.studentCount;
+        // 重置哈希表
+        hashTable = new Array(HASH_LEN).fill(null);
+        studentCount = result.data.length;
+        
+        // 把云端数据按哈希算法重新填入本地哈希表（保证哈希结构正确）
+        result.data.forEach(item => {
+            const node = new HashNode(item.py, item.major, item.grade_year, item.story);
+            node.k = item.k;
+            node.vote = item.vote;
+            node.si = item.si;
+            
+            // 按哈希算法找到正确位置
+            let addr = hashFunc(item.k);
+            let si = 1;
+            while (hashTable[addr] !== null && si < item.si) {
+                addr = rehash(addr, item.k);
+                si++;
+            }
+            hashTable[addr] = node;
+        });
         return true;
+    } catch (e) {
+        console.error('连接后端失败:', e);
+        return false;
     }
-    return false;
 }
 
-// 添加操作日志
+// 本地日志
 function addLog(content) {
     let logList = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
     const now = new Date();
@@ -84,124 +96,51 @@ function addLog(content) {
 }
 
 // ===================== 业务功能实现 =====================
-
-// 功能1：提名学生 / 投票
-function insertOrVote(name, major, gradeYear, story) {
-    const key = getKey(name);
-    let addr = hashFunc(key);
-    let searchLen = 1;
-
-    // 情况1：哈希位置为空 → 直接提名，投第一票
-    if (hashTable[addr] === null) {
-        const newNode = new HashNode(name, major, gradeYear, story);
-        newNode.k = key;
-        newNode.vote = 1;
-        newNode.si = searchLen;
-        hashTable[addr] = newNode;
-        studentCount++;
-        saveData();
-        addLog(`📝 提名新学生：${name}（${major} ${gradeYear}级），初始票数1`);
-        return { 
-            success: true, 
-            type: 'nominate', 
-            msg: `✅ 恭喜 ${name} 同学被提名为优秀青年候选人，已自动投上第一票！` 
-        };
-    }
-
-    // 情况2：哈希位置有数据，且是同一个学生 → 票数+1
-    if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
-        hashTable[addr].vote++;
-        saveData();
-        addLog(`🗳️ 为 ${name}（${major} ${gradeYear}级）投票，当前票数${hashTable[addr].vote}`);
-        return { 
-            success: true, 
-            type: 'vote', 
-            msg: `✅ 您为 ${name} 同学投票成功！当前票数：${hashTable[addr].vote}` 
-        };
-    }
-
-    // 情况3：发生哈希冲突，用再哈希法循环查找
-    while (true) {
-        addr = rehash(addr, key);
-        searchLen++;
-
-        // 找到空位 → 新增提名
-        if (hashTable[addr] === null) {
-            const newNode = new HashNode(name, major, gradeYear, story);
-            newNode.k = key;
-            newNode.vote = 1;
-            newNode.si = searchLen;
-            hashTable[addr] = newNode;
-            studentCount++;
-            saveData();
-            addLog(`📝 提名新学生：${name}（${major} ${gradeYear}级），初始票数1（冲突后插入）`);
-            return { 
-                success: true, 
-                type: 'nominate', 
-                msg: `✅ 恭喜 ${name} 同学被提名为优秀青年候选人，已自动投上第一票！` 
-            };
+async function insertOrVote(name, major, gradeYear, story) {
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/vote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, major, gradeYear, story })
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+            // 操作成功后，重新从云端拉取最新数据
+            await loadDataFromCloud();
+            addLog(result.type === 'vote' 
+                ? `🗳️ 为 ${name}（${major} ${gradeYear}级）投票` 
+                : `📝 提名新学生：${name}（${major} ${gradeYear}级）`);
         }
-
-        // 找到目标学生 → 票数+1
-        if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
-            hashTable[addr].vote++;
-            saveData();
-            addLog(`🗳️ 为 ${name}（${major} ${gradeYear}级）投票，当前票数${hashTable[addr].vote}`);
-            return { 
-                success: true, 
-                type: 'vote', 
-                msg: `✅ 您为 ${name} 同学投票成功！当前票数：${hashTable[addr].vote}` 
-            };
-        }
-
-        // 防止表满死循环
-        if (searchLen > HASH_LEN) {
-            return { success: false, msg: '❌ 提名人数已满，无法继续提名！' };
-        }
+        return result;
+    } catch (e) {
+        return { success: false, msg: '❌ 连接服务器失败，请稍后重试' };
     }
 }
 
-// 功能2：查询指定学生的基本信息
 function findStudent(name, major, gradeYear) {
     const key = getKey(name);
     let addr = hashFunc(key);
     let searchLen = 1;
 
-    if (hashTable[addr] === null) {
-        return { success: false, msg: '❌ 该同学未被提名！' };
-    }
-
-    if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
-        return { success: true, data: hashTable[addr] };
-    }
-
-    // 冲突后继续查找
-    while (true) {
-        addr = rehash(addr, key);
-        searchLen++;
-
-        if (hashTable[addr] === null) {
-            return { success: false, msg: '❌ 该同学未被提名！' };
-        }
-
-        if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
+    while (hashTable[addr] !== null && searchLen <= HASH_LEN) {
+        if (hashTable[addr].py === name && 
+            hashTable[addr].major === major && 
+            hashTable[addr].gradeYear === gradeYear) {
             return { success: true, data: hashTable[addr] };
         }
-
-        if (searchLen > HASH_LEN) {
-            return { success: false, msg: '❌ 该同学未被提名！' };
-        }
+        addr = rehash(addr, key);
+        searchLen++;
     }
+    return { success: false, msg: '❌ 该同学未被提名！' };
 }
 
-// 功能3：获取所有学生信息 + 计算性能指标
 function getAllStudents(filterName = '', filterMajor = '') {
     const list = [];
     let totalSearchLen = 0;
     let totalConflict = 0;
     for (let i = 0; i < HASH_LEN; i++) {
         if (hashTable[i] !== null) {
-            // 筛选
             if (filterName && !hashTable[i].py.includes(filterName)) continue;
             if (filterMajor && hashTable[i].major !== filterMajor) continue;
             
@@ -215,31 +154,38 @@ function getAllStudents(filterName = '', filterMajor = '') {
     return { list, asl, loadFactor, totalConflict };
 }
 
-// 功能4：编辑学生信息
-function updateStudent(index, major, gradeYear, story) {
+async function updateStudent(index, major, gradeYear, story) {
     if (hashTable[index] === null) return false;
-    hashTable[index].major = major;
-    hashTable[index].gradeYear = gradeYear;
-    hashTable[index].story = story;
-    saveData();
-    addLog(`✏️ 编辑学生信息：${hashTable[index].py}，修改专业、年级和事迹`);
-    return true;
+    const name = hashTable[index].py;
+    
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/student`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, major, gradeYear, story })
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+            await loadDataFromCloud();
+            addLog(`✏️ 编辑学生信息：${name}`);
+        }
+        return result.success;
+    } catch (e) {
+        return false;
+    }
 }
 
-// ===================== 二叉排序树实现排行榜 =====================
-
-// 向二叉排序树插入节点（优化：票数相同按姓名字典序排序）
+// ===================== 二叉排序树排行榜（完全保留） =====================
 function insertBST(hashNode, root) {
     if (root === null) {
         return new BSTNode(hashNode);
     }
-    // 先比较票数
     if (hashNode.vote < root.k) {
         root.lchild = insertBST(hashNode, root.lchild);
     } else if (hashNode.vote > root.k) {
         root.rchild = insertBST(hashNode, root.rchild);
     } else {
-        // 票数相同，按姓名字典序升序
         if (hashNode.py.localeCompare(root.name, 'zh-CN') < 0) {
             root.lchild = insertBST(hashNode, root.lchild);
         } else {
@@ -249,7 +195,6 @@ function insertBST(hashNode, root) {
     return root;
 }
 
-// 逆中序遍历（右-根-左），得到票数降序的前10名
 let rankList = [];
 let rankCount = 0;
 function reverseInOrder(root) {
@@ -263,10 +208,8 @@ function reverseInOrder(root) {
     }
 }
 
-// 获取排行榜列表
 function getRank() {
     let root = null;
-    // 把所有学生插入二叉排序树
     for (let i = 0; i < HASH_LEN; i++) {
         if (hashTable[i] !== null) {
             root = insertBST(hashTable[i], root);
@@ -279,8 +222,6 @@ function getRank() {
 }
 
 // ===================== 页面交互逻辑 =====================
-
-// 菜单切换功能
 document.querySelectorAll('.menu-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -288,7 +229,6 @@ document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab).classList.add('active');
         
-        // 切换到对应面板时刷新数据
         if (btn.dataset.tab === 'all') showAllVotes();
         if (btn.dataset.tab === 'hash') showHashTable();
         if (btn.dataset.tab === 'log') showLog();
@@ -296,15 +236,13 @@ document.querySelectorAll('.menu-btn').forEach(btn => {
     });
 });
 
-// 提名/投票按钮点击事件
-function handleVote() {
+async function handleVote() {
     const name = document.getElementById('voteName').value.trim();
     const major = document.getElementById('voteMajor').value;
     const gradeYear = parseInt(document.getElementById('voteGrade').value);
     const story = document.getElementById('voteStory').value.trim();
     const resultEl = document.getElementById('voteResult');
 
-    // 非法数据校验
     if (!name) {
         resultEl.innerHTML = '<span style="color:red">❌ 输入错误：姓名不能为空！</span>';
         return;
@@ -314,16 +252,16 @@ function handleVote() {
         return;
     }
 
-    const res = insertOrVote(name, major, gradeYear, story);
+    resultEl.innerHTML = '<span>⏳ 提交中...</span>';
+    const res = await insertOrVote(name, major, gradeYear, story);
     resultEl.innerHTML = `<span style="color:${res.success ? 'green' : 'red'}">${res.msg}</span>`;
     
-    // 清空输入框
     document.getElementById('voteName').value = '';
     document.getElementById('voteGrade').value = '';
     document.getElementById('voteStory').value = '';
+    showAllVotes();
 }
 
-// 查询按钮点击事件
 function handleSearch() {
     const name = document.getElementById('searchName').value.trim();
     const major = document.getElementById('searchMajor').value;
@@ -354,7 +292,6 @@ function handleSearch() {
     }
 }
 
-// 显示全部票数
 function showAllVotes() {
     const filterName = document.getElementById('filterName').value.trim();
     const filterMajor = document.getElementById('filterMajor').value;
@@ -379,7 +316,6 @@ function showAllVotes() {
         `📏 平均查找长度：ASL(${studentCount}) = ${asl} &nbsp;&nbsp; 📦 装填因子：α = ${loadFactor} &nbsp;&nbsp; ⚠️ 总冲突次数：${totalConflict}`;
 }
 
-// 显示排行榜
 function showRank() {
     const rank = getRank();
     const tbody = document.getElementById('rankTableBody');
@@ -398,7 +334,6 @@ function showRank() {
     });
 }
 
-// 显示哈希表结构
 function showHashTable() {
     const grid = document.getElementById('hashGrid');
     const info = document.getElementById('hashInfo');
@@ -450,7 +385,6 @@ function showHashTable() {
     `;
 }
 
-// 显示操作日志
 function showLog() {
     const logList = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
     const container = document.getElementById('logList');
@@ -469,7 +403,7 @@ function showLog() {
     });
 }
 
-// 编辑弹窗相关
+// 编辑弹窗
 function openEditModal(index) {
     editIndex = index;
     const data = hashTable[index];
@@ -484,7 +418,7 @@ function closeEditModal() {
     editIndex = -1;
 }
 
-function saveEdit() {
+async function saveEdit() {
     const major = document.getElementById('editMajor').value;
     const gradeYear = parseInt(document.getElementById('editGrade').value);
     const story = document.getElementById('editStory').value.trim();
@@ -494,83 +428,42 @@ function saveEdit() {
         return;
     }
     
-    updateStudent(editIndex, major, gradeYear, story);
+    await updateStudent(editIndex, major, gradeYear, story);
     closeEditModal();
     showAllVotes();
 }
 
 // 重置系统
-function resetSystem() {
+async function resetSystem() {
     if (!confirm('🔔 确定要重置系统吗？所有提名和票数都会恢复初始状态！')) return;
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(LOG_KEY);
-    hashTable = new Array(HASH_LEN).fill(null);
-    studentCount = 0;
-    initStudents();
-    showAllVotes();
-    addLog('🔄 系统重置，恢复初始数据');
-    alert('✅ 系统已重置！');
+    
+    try {
+        await fetch(`${BACKEND_URL}/api/reset`, { method: 'POST' });
+        await loadDataFromCloud();
+        showAllVotes();
+        addLog('🔄 系统重置，恢复初始数据');
+        alert('✅ 系统已重置！');
+    } catch (e) {
+        alert('❌ 重置失败，请稍后重试');
+    }
 }
 
-// 清空日志
 function clearLog() {
     if (!confirm('🔔 确定要清空所有操作日志吗？')) return;
     localStorage.removeItem(LOG_KEY);
     showLog();
 }
 
-// ===================== 初始化：预置10名初始提名学生 =====================
-function initStudents() {
-    const initData = [
-        { name: '陈静', major: '软件工程', gradeYear: 2024, vote: 9, story: '学习成绩优异，积极参与社团活动' },
-        { name: '杨帆', major: '网络工程', gradeYear: 2023, vote: 9, story: '校级奖学金获得者，志愿服务时长超100小时' },
-        { name: '刘伟', major: '人工智能', gradeYear: 2022, vote: 10, story: '专业排名前列，获省级竞赛一等奖' },
-        { name: '李华', major: '计算机科学与技术', gradeYear: 2024, vote: 12, story: '优秀学生干部，组织多项校园活动' },
-        { name: '赵磊', major: '数字媒体技术', gradeYear: 2024, vote: 6, story: '创新创业大赛获奖者' },
-        { name: '周婷', major: '计算机科学与技术', gradeYear: 2022, vote: 4, story: '积极参与社会实践' },
-        { name: '吴强', major: '人工智能', gradeYear: 2024, vote: 3, story: '乐于助人，团结同学' },
-        { name: '张明', major: '软件工程', gradeYear: 2023, vote: 14, story: '专业排名第一，多项竞赛获奖' },
-        { name: '王芳', major: '数据科学与大数据技术', gradeYear: 2023, vote: 12, story: '刻苦钻研专业知识，科研成果突出' },
-        { name: '郑雪', major: '软件工程', gradeYear: 2022, vote: 2, story: '优秀共青团员' }
-    ];
-
-    initData.forEach(item => {
-        const key = getKey(item.name);
-        let addr = hashFunc(key);
-        let searchLen = 1;
-
-        if (hashTable[addr] === null) {
-            const node = new HashNode(item.name, item.major, item.gradeYear, item.story);
-            node.k = key;
-            node.vote = item.vote;
-            node.si = searchLen;
-            hashTable[addr] = node;
-            studentCount++;
-            return;
-        }
-
-        // 冲突处理
-        while (hashTable[addr] !== null) {
-            addr = rehash(addr, key);
-            searchLen++;
-        }
-        const node = new HashNode(item.name, item.major, item.gradeYear, item.story);
-        node.k = key;
-        node.vote = item.vote;
-        node.si = searchLen;
-        hashTable[addr] = node;
-        studentCount++;
-    });
-    saveData();
-    addLog('✅ 系统初始化完成，已加载10名初始候选人数据');
-}
-
-// 页面加载完成后自动初始化
-window.onload = function() {
-    // 先尝试读取本地数据，没有的话初始化
-    if (!loadData()) {
-        initStudents();
-    }
+// 页面初始化
+window.onload = async function() {
+    await loadDataFromCloud();
     showAllVotes();
     showRank();
+    
+    // 每5秒自动从云端拉取最新数据，实现多人同步
+    setInterval(async () => {
+        await loadDataFromCloud();
+        showAllVotes();
+        showRank();
+    }, 5000);
 };
