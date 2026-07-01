@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校园十大优秀青年评比系统</title>
+    <title>🏆 校园十大优秀青年评比系统</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>校园十大优秀青年评比系统</h1>
+        <h1>🏆 校园十大优秀青年评比系统</h1>
         
         <!-- 功能菜单 -->
         <div class="menu">
-            <button class="menu-btn active" data-tab="vote">提名与投票</button>
-            <button class="menu-btn" data-tab="search">学生信息查询</button>
-            <button class="menu-btn" data-tab="all">全量票数统计</button>
-            <button class="menu-btn" data-tab="rank">十大青年排行榜</button>
-            <button class="menu-btn" data-tab="hash">哈希表结构</button>
-            <button class="menu-btn" data-tab="log">操作日志</button>
+            <button class="menu-btn active" data-tab="vote">🗳️ 提名与投票</button>
+            <button class="menu-btn" data-tab="search">🔍 学生信息查询</button>
+            <button class="menu-btn" data-tab="all">📊 全量票数统计</button>
+            <button class="menu-btn" data-tab="rank">🏅 十大青年排行榜</button>
+            <button class="menu-btn" data-tab="hash">🧮 哈希表结构</button>
+            <button class="menu-btn" data-tab="log">📝 操作日志</button>
         </div>
 
         <!-- 1. 提名/投票面板 -->
         <div class="tab-panel active" id="vote">
+            <h3>📋 优秀青年提名 / 投票</h3>
             <div class="form-group">
                 <label>学生姓名</label>
                 <input type="text" id="voteName" placeholder="请输入候选人中文姓名">
@@ -47,12 +48,13 @@
                 <label>突出事迹（选填）</label>
                 <textarea id="voteStory" rows="3" placeholder="简要介绍该同学的优秀事迹、获奖情况等"></textarea>
             </div>
-            <button class="submit-btn" onclick="handleVote()">确认提交</button>
+            <button class="submit-btn" onclick="handleVote()">✅ 确认提交</button>
             <div class="result" id="voteResult"></div>
         </div>
 
         <!-- 2. 查询学生信息面板 -->
         <div class="tab-panel" id="search">
+            <h3>🔎 提名学生信息查询</h3>
             <div class="form-group">
                 <label>学生姓名</label>
                 <input type="text" id="searchName" placeholder="请输入要查询的学生姓名">
@@ -74,7 +76,7 @@
                     <input type="number" id="searchGrade" min="2020" max="2030" placeholder="如：2023">
                 </div>
             </div>
-            <button class="submit-btn" onclick="handleSearch()">立即查询</button>
+            <button class="submit-btn" onclick="handleSearch()">🔍 立即查询</button>
             <div class="result" id="searchResult"></div>
         </div>
 
@@ -97,18 +99,18 @@
                         <option value="数据科学与大数据技术">数据科学与大数据技术</option>
                     </select>
                 </div>
-                <button class="reset-btn" onclick="resetSystem()">系统重置</button>
+                <button class="reset-btn" onclick="resetSystem()">🔄 系统重置</button>
             </div>
-            <h3>全量提名学生票数统计</h3>
+            <h3>📈 全量提名学生票数统计</h3>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>专业</th>
-                        <th>年级</th>
-                        <th>姓名</th>
-                        <th>当前票数</th>
-                        <th>查找长度</th>
-                        <th>操作</th>
+                        <th>🎓 专业</th>
+                        <th>📅 年级</th>
+                        <th>👤 姓名</th>
+                        <th>🗳️ 当前票数</th>
+                        <th>📏 查找长度</th>
+                        <th>⚙️ 操作</th>
                     </tr>
                 </thead>
                 <tbody id="allTableBody">
@@ -119,16 +121,16 @@
 
         <!-- 4. 排行榜面板 -->
         <div class="tab-panel" id="rank">
-            <h3>十大优秀青年排行榜</h3>
-            <button class="submit-btn" onclick="showRank()">刷新排行榜</button>
+            <h3>🏆 十大优秀青年排行榜</h3>
+            <button class="submit-btn" onclick="showRank()">🔄 刷新排行榜</button>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>排名</th>
-                        <th>专业</th>
-                        <th>年级</th>
-                        <th>姓名</th>
-                        <th>票数</th>
+                        <th>🏅 排名</th>
+                        <th>🎓 专业</th>
+                        <th>📅 年级</th>
+                        <th>👤 姓名</th>
+                        <th>🗳️ 票数</th>
                     </tr>
                 </thead>
                 <tbody id="rankTableBody">
@@ -138,21 +140,21 @@
 
         <!-- 5. 哈希表结构面板 -->
         <div class="tab-panel" id="hash">
-            <h3>哈希表底层存储结构</h3>
+            <h3>🧠 哈希表底层存储结构</h3>
             <div class="hash-info" id="hashInfo"></div>
             <div class="hash-grid" id="hashGrid"></div>
             <div class="hash-legend">
-                <span class="legend-item"><span class="box empty"></span>空槽位</span>
-                <span class="legend-item"><span class="box normal"></span>无冲突</span>
-                <span class="legend-item"><span class="box conflict"></span>有冲突</span>
+                <span class="legend-item"><span class="box empty"></span>⬜ 空槽位</span>
+                <span class="legend-item"><span class="box normal"></span>✅ 无冲突</span>
+                <span class="legend-item"><span class="box conflict"></span>⚠️ 有冲突</span>
             </div>
         </div>
 
         <!-- 6. 操作日志面板 -->
         <div class="tab-panel" id="log">
             <div class="filter-bar">
-                <h3>操作日志记录</h3>
-                <button class="reset-btn" onclick="clearLog()">清空日志</button>
+                <h3>📜 操作日志记录</h3>
+                <button class="reset-btn" onclick="clearLog()">🗑️ 清空日志</button>
             </div>
             <div class="log-list" id="logList"></div>
         </div>
@@ -161,7 +163,7 @@
     <!-- 编辑弹窗 -->
     <div class="modal" id="editModal">
         <div class="modal-content">
-            <h3>编辑学生信息</h3>
+            <h3>✏️ 编辑学生信息</h3>
             <div class="form-group">
                 <label>所属专业</label>
                 <select id="editMajor">
@@ -182,8 +184,8 @@
                 <textarea id="editStory" rows="3"></textarea>
             </div>
             <div class="modal-btns">
-                <button class="cancel-btn" onclick="closeEditModal()">取消</button>
-                <button class="submit-btn" onclick="saveEdit()">保存</button>
+                <button class="cancel-btn" onclick="closeEditModal()">❌ 取消</button>
+                <button class="submit-btn" onclick="saveEdit()">💾 保存</button>
             </div>
         </div>
     </div>

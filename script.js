@@ -100,11 +100,11 @@ function insertOrVote(name, major, gradeYear, story) {
         hashTable[addr] = newNode;
         studentCount++;
         saveData();
-        addLog(`提名新学生：${name}（${major} ${gradeYear}级），初始票数1`);
+        addLog(`📝 提名新学生：${name}（${major} ${gradeYear}级），初始票数1`);
         return { 
             success: true, 
             type: 'nominate', 
-            msg: `恭喜 ${name} 同学被提名为优秀青年候选人，已自动投上第一票！` 
+            msg: `✅ 恭喜 ${name} 同学被提名为优秀青年候选人，已自动投上第一票！` 
         };
     }
 
@@ -112,11 +112,11 @@ function insertOrVote(name, major, gradeYear, story) {
     if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
         hashTable[addr].vote++;
         saveData();
-        addLog(`为 ${name}（${major} ${gradeYear}级）投票，当前票数${hashTable[addr].vote}`);
+        addLog(`🗳️ 为 ${name}（${major} ${gradeYear}级）投票，当前票数${hashTable[addr].vote}`);
         return { 
             success: true, 
             type: 'vote', 
-            msg: `您为 ${name} 同学投票成功！当前票数：${hashTable[addr].vote}` 
+            msg: `✅ 您为 ${name} 同学投票成功！当前票数：${hashTable[addr].vote}` 
         };
     }
 
@@ -134,29 +134,29 @@ function insertOrVote(name, major, gradeYear, story) {
             hashTable[addr] = newNode;
             studentCount++;
             saveData();
-            addLog(`提名新学生：${name}（${major} ${gradeYear}级），初始票数1（冲突后插入）`);
+            addLog(`📝 提名新学生：${name}（${major} ${gradeYear}级），初始票数1（冲突后插入）`);
             return { 
                 success: true, 
                 type: 'nominate', 
-                msg: `恭喜 ${name} 同学被提名为优秀青年候选人，已自动投上第一票！` 
+                msg: `✅ 恭喜 ${name} 同学被提名为优秀青年候选人，已自动投上第一票！` 
             };
         }
 
-        // 找到目标学生 → 投票+1
+        // 找到目标学生 → 票数+1
         if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
             hashTable[addr].vote++;
             saveData();
-            addLog(`为 ${name}（${major} ${gradeYear}级）投票，当前票数${hashTable[addr].vote}`);
+            addLog(`🗳️ 为 ${name}（${major} ${gradeYear}级）投票，当前票数${hashTable[addr].vote}`);
             return { 
                 success: true, 
                 type: 'vote', 
-                msg: `您为 ${name} 同学投票成功！当前票数：${hashTable[addr].vote}` 
+                msg: `✅ 您为 ${name} 同学投票成功！当前票数：${hashTable[addr].vote}` 
             };
         }
 
         // 防止表满死循环
         if (searchLen > HASH_LEN) {
-            return { success: false, msg: '提名人数已满，无法继续提名！' };
+            return { success: false, msg: '❌ 提名人数已满，无法继续提名！' };
         }
     }
 }
@@ -168,7 +168,7 @@ function findStudent(name, major, gradeYear) {
     let searchLen = 1;
 
     if (hashTable[addr] === null) {
-        return { success: false, msg: '该同学未被提名！' };
+        return { success: false, msg: '❌ 该同学未被提名！' };
     }
 
     if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
@@ -181,7 +181,7 @@ function findStudent(name, major, gradeYear) {
         searchLen++;
 
         if (hashTable[addr] === null) {
-            return { success: false, msg: '该同学未被提名！' };
+            return { success: false, msg: '❌ 该同学未被提名！' };
         }
 
         if (hashTable[addr].k === key && hashTable[addr].py === name && hashTable[addr].major === major && hashTable[addr].gradeYear === gradeYear) {
@@ -189,7 +189,7 @@ function findStudent(name, major, gradeYear) {
         }
 
         if (searchLen > HASH_LEN) {
-            return { success: false, msg: '该同学未被提名！' };
+            return { success: false, msg: '❌ 该同学未被提名！' };
         }
     }
 }
@@ -222,7 +222,7 @@ function updateStudent(index, major, gradeYear, story) {
     hashTable[index].gradeYear = gradeYear;
     hashTable[index].story = story;
     saveData();
-    addLog(`编辑学生信息：${hashTable[index].py}，修改专业、年级和事迹`);
+    addLog(`✏️ 编辑学生信息：${hashTable[index].py}，修改专业、年级和事迹`);
     return true;
 }
 
@@ -306,18 +306,16 @@ function handleVote() {
 
     // 非法数据校验
     if (!name) {
-        resultEl.innerHTML = '<span style="color:red">输入错误：姓名不能为空！</span>';
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：姓名不能为空！</span>';
         return;
     }
     if (isNaN(gradeYear) || gradeYear < 2020 || gradeYear > 2030) {
-        resultEl.innerHTML = '<span style="color:red">输入错误：请输入正确的入学年级（2020-2030）！</span>';
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：请输入正确的入学年级（2020-2030）！</span>';
         return;
     }
 
     const res = insertOrVote(name, major, gradeYear, story);
-    resultEl.innerHTML = res.success 
-        ? `<span style="color:green">${res.msg}</span>` 
-        : `<span style="color:red">${res.msg}</span>`;
+    resultEl.innerHTML = `<span style="color:${res.success ? 'green' : 'red'}">${res.msg}</span>`;
     
     // 清空输入框
     document.getElementById('voteName').value = '';
@@ -333,11 +331,11 @@ function handleSearch() {
     const resultEl = document.getElementById('searchResult');
 
     if (!name) {
-        resultEl.innerHTML = '<span style="color:red">输入错误：姓名不能为空！</span>';
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：姓名不能为空！</span>';
         return;
     }
     if (isNaN(gradeYear) || gradeYear < 2020 || gradeYear > 2030) {
-        resultEl.innerHTML = '<span style="color:red">输入错误：请输入正确的入学年级！</span>';
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：请输入正确的入学年级！</span>';
         return;
     }
 
@@ -345,11 +343,11 @@ function handleSearch() {
     if (res.success) {
         const d = res.data;
         resultEl.innerHTML = `
-            <p><strong>姓名：</strong>${d.py}</p>
-            <p><strong>专业：</strong>${d.major}</p>
-            <p><strong>年级：</strong>${d.gradeYear}级</p>
-            <p><strong>当前票数：</strong>${d.vote}票</p>
-            <p><strong>突出事迹：</strong>${d.story || '暂无'}</p>
+            <p><strong>👤 姓名：</strong>${d.py}</p>
+            <p><strong>🎓 专业：</strong>${d.major}</p>
+            <p><strong>📅 年级：</strong>${d.gradeYear}级</p>
+            <p><strong>🗳️ 当前票数：</strong>${d.vote}票</p>
+            <p><strong>📝 突出事迹：</strong>${d.story || '暂无'}</p>
         `;
     } else {
         resultEl.innerHTML = `<span style="color:red">${res.msg}</span>`;
@@ -372,13 +370,13 @@ function showAllVotes() {
             <td>${item.data.py}</td>
             <td>${item.data.vote}</td>
             <td>${item.data.si}</td>
-            <td><button class="edit-btn" onclick="openEditModal(${item.index})">编辑</button></td>
+            <td><button class="edit-btn" onclick="openEditModal(${item.index})">✏️ 编辑</button></td>
         `;
         tbody.appendChild(tr);
     });
 
     document.getElementById('aslResult').innerHTML = 
-        `平均查找长度：ASL(${studentCount}) = ${asl} &nbsp;&nbsp; 装填因子：α = ${loadFactor} &nbsp;&nbsp; 总冲突次数：${totalConflict}`;
+        `📏 平均查找长度：ASL(${studentCount}) = ${asl} &nbsp;&nbsp; 📦 装填因子：α = ${loadFactor} &nbsp;&nbsp; ⚠️ 总冲突次数：${totalConflict}`;
 }
 
 // 显示排行榜
@@ -414,7 +412,7 @@ function showHashTable() {
         
         if (hashTable[i] === null) {
             cell.classList.add('empty');
-            cell.innerHTML = `<div class="addr">地址 ${i}</div><div>空</div>`;
+            cell.innerHTML = `<div class="addr">地址 ${i}</div><div>⬜ 空</div>`;
         } else {
             usedCount++;
             if (hashTable[i].si > 1) {
@@ -426,7 +424,7 @@ function showHashTable() {
             cell.innerHTML = `
                 <div class="addr">地址 ${i}</div>
                 <div class="name">${hashTable[i].py}</div>
-                <div class="si">查找长度：${hashTable[i].si}</div>
+                <div class="si">📏 查找长度：${hashTable[i].si}</div>
             `;
         }
         grid.appendChild(cell);
@@ -435,19 +433,19 @@ function showHashTable() {
     info.innerHTML = `
         <div class="hash-info-item">
             <div class="num">${HASH_LEN}</div>
-            <div class="label">哈希表总长度</div>
+            <div class="label">📏 哈希表总长度</div>
         </div>
         <div class="hash-info-item">
             <div class="num">${usedCount}</div>
-            <div class="label">已占用槽位</div>
+            <div class="label">✅ 已占用槽位</div>
         </div>
         <div class="hash-info-item">
             <div class="num">${conflictCount}</div>
-            <div class="label">冲突槽位数</div>
+            <div class="label">⚠️ 冲突槽位数</div>
         </div>
         <div class="hash-info-item">
             <div class="num">${(usedCount/HASH_LEN*100).toFixed(1)}%</div>
-            <div class="label">装填因子</div>
+            <div class="label">📦 装填因子</div>
         </div>
     `;
 }
@@ -459,14 +457,14 @@ function showLog() {
     container.innerHTML = '';
     
     if (logList.length === 0) {
-        container.innerHTML = '<div class="log-item"><span class="content">暂无操作记录</span></div>';
+        container.innerHTML = '<div class="log-item"><span class="content">📭 暂无操作记录</span></div>';
         return;
     }
     
     logList.forEach(item => {
         const div = document.createElement('div');
         div.className = 'log-item';
-        div.innerHTML = `<span class="content">${item.content}</span><span class="time">${item.time}</span>`;
+        div.innerHTML = `<span class="content">${item.content}</span><span class="time">⏰ ${item.time}</span>`;
         container.appendChild(div);
     });
 }
@@ -492,7 +490,7 @@ function saveEdit() {
     const story = document.getElementById('editStory').value.trim();
     
     if (isNaN(gradeYear) || gradeYear < 2020 || gradeYear > 2030) {
-        alert('请输入正确的入学年级（2020-2030）！');
+        alert('❌ 请输入正确的入学年级（2020-2030）！');
         return;
     }
     
@@ -503,25 +501,25 @@ function saveEdit() {
 
 // 重置系统
 function resetSystem() {
-    if (!confirm('确定要重置系统吗？所有提名和票数都会恢复初始状态！')) return;
+    if (!confirm('🔔 确定要重置系统吗？所有提名和票数都会恢复初始状态！')) return;
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LOG_KEY);
     hashTable = new Array(HASH_LEN).fill(null);
     studentCount = 0;
     initStudents();
     showAllVotes();
-    addLog('系统重置，恢复初始数据');
-    alert('系统已重置！');
+    addLog('🔄 系统重置，恢复初始数据');
+    alert('✅ 系统已重置！');
 }
 
 // 清空日志
 function clearLog() {
-    if (!confirm('确定要清空所有操作日志吗？')) return;
+    if (!confirm('🔔 确定要清空所有操作日志吗？')) return;
     localStorage.removeItem(LOG_KEY);
     showLog();
 }
 
-// ===================== 初始化：预置10名初始提名学生（和截图数据对应） =====================
+// ===================== 初始化：预置10名初始提名学生 =====================
 function initStudents() {
     const initData = [
         { name: '陈静', major: '软件工程', gradeYear: 2024, vote: 9, story: '学习成绩优异，积极参与社团活动' },
@@ -564,7 +562,7 @@ function initStudents() {
         studentCount++;
     });
     saveData();
-    addLog('系统初始化完成，已加载10名初始候选人数据');
+    addLog('✅ 系统初始化完成，已加载10名初始候选人数据');
 }
 
 // 页面加载完成后自动初始化
