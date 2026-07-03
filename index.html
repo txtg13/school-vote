@@ -13,6 +13,7 @@
         <!-- 功能菜单 -->
         <div class="menu">
             <button class="menu-btn active" data-tab="vote">🗳️ 提名与投票</button>
+            <button class="menu-btn" data-tab="quickVote">⚡ 快速投票</button>
             <button class="menu-btn" data-tab="search">🔍 学生信息查询</button>
             <button class="menu-btn" data-tab="all">📊 全量票数统计</button>
             <button class="menu-btn" data-tab="rank">🏅 十大青年排行榜</button>
@@ -23,6 +24,9 @@
         <!-- 1. 提名/投票面板 -->
         <div class="tab-panel active" id="vote">
             <h3>📋 优秀青年提名 / 投票</h3>
+            <p style="color:#666;margin:0 0 15px 0;font-size:14px;">
+                💡 规则说明：同一IP每天最多给同一位同学投3票
+            </p>
             <div class="form-group">
                 <label>学生姓名</label>
                 <input type="text" id="voteName" placeholder="请输入候选人中文姓名">
@@ -52,7 +56,43 @@
             <div class="result" id="voteResult"></div>
         </div>
 
-        <!-- 2. 查询学生信息面板 -->
+        <!-- 2. 快速投票面板 -->
+        <div class="tab-panel" id="quickVote">
+            <h3>⚡ 快速投票</h3>
+            <p style="color:#666;margin:0 0 15px 0;font-size:14px;">
+                💡 规则说明：同一IP每天最多给同一位同学投3票，筛选后直接点击投票按钮即可
+            </p>
+            <div class="filter-bar">
+                <div class="filter-item">
+                    <label>姓名搜索</label>
+                    <input type="text" id="quickSearchName" placeholder="输入姓名关键词" oninput="renderQuickVoteList()">
+                </div>
+                <div class="filter-item">
+                    <label>专业筛选</label>
+                    <select id="quickFilterMajor" onchange="renderQuickVoteList()">
+                        <option value="">全部专业</option>
+                        <option value="软件工程">软件工程</option>
+                        <option value="网络工程">网络工程</option>
+                        <option value="人工智能">人工智能</option>
+                        <option value="计算机科学与技术">计算机科学与技术</option>
+                        <option value="数字媒体技术">数字媒体技术</option>
+                        <option value="数据科学与大数据技术">数据科学与大数据技术</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>年级筛选</label>
+                    <select id="quickFilterGrade" onchange="renderQuickVoteList()">
+                        <option value="">全部年级</option>
+                        <option value="2022">2022级</option>
+                        <option value="2023">2023级</option>
+                        <option value="2024">2024级</option>
+                    </select>
+                </div>
+            </div>
+            <div class="quick-vote-list" id="quickVoteList"></div>
+        </div>
+
+        <!-- 3. 查询学生信息面板 -->
         <div class="tab-panel" id="search">
             <h3>🔎 提名学生信息查询</h3>
             <div class="form-group">
@@ -80,7 +120,7 @@
             <div class="result" id="searchResult"></div>
         </div>
 
-        <!-- 3. 全量票数统计面板（新增排序功能） -->
+        <!-- 4. 全量票数统计面板 -->
         <div class="tab-panel" id="all">
             <div class="filter-bar">
                 <div class="filter-item">
@@ -130,7 +170,7 @@
             <div class="asl" id="aslResult"></div>
         </div>
 
-        <!-- 4. 排行榜面板 -->
+        <!-- 5. 排行榜面板 -->
         <div class="tab-panel" id="rank">
             <h3>🏆 十大优秀青年排行榜</h3>
             <button class="submit-btn" onclick="showRank()">🔄 刷新排行榜</button>
@@ -149,7 +189,7 @@
             </table>
         </div>
 
-        <!-- 5. 哈希表结构面板 -->
+        <!-- 6. 哈希表结构面板 -->
         <div class="tab-panel" id="hash">
             <h3>🧠 哈希表底层存储结构</h3>
             <div class="hash-info" id="hashInfo"></div>
@@ -161,7 +201,7 @@
             </div>
         </div>
 
-        <!-- 6. 操作日志面板 -->
+        <!-- 7. 操作日志面板 -->
         <div class="tab-panel" id="log">
             <div class="filter-bar">
                 <h3>📜 操作日志记录</h3>
@@ -203,4 +243,4 @@
 
     <script src="script.js"></script>
 </body>
-</html>
+</html>     
