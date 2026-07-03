@@ -480,3 +480,48 @@ h3 {
         min-width: 45%;
     }
 }
+/* ===== 快速投票卡片样式 ===== */
+.quick-vote-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+.quick-vote-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+.quick-vote-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.vote-name {
+    font-weight: 600;
+    font-size: 17px;
+    margin-bottom: 5px;
+    color: #333;
+}
+.vote-meta {
+    font-size: 13px;
+    color: #777;
+}
+.vote-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: opacity 0.2s;
+}
+.vote-btn:hover {
+    opacity: 0.9;
+}
