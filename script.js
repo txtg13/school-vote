@@ -1,10 +1,10 @@
-// ===================== 后端地址（已经帮你填好了） =====================
+// ===================== 后端地址 =====================
 const BACKEND_URL = "https://celebrated-consideration-production-f3d6.up.railway.app";
 
-// ===================== 常量定义（课程设计核心逻辑完全保留） =====================
-const M = 19;          // 哈希表模数
-const HASH_LEN = 20;   // 哈希表总长度
-const TOP_N = 10;      // 排行榜显示前10名
+// ===================== 常量定义 =====================
+const M = 19;
+const HASH_LEN = 20;
+const TOP_N = 10;
 const LOG_KEY = 'campus_vote_log';
 
 // ===================== 数据结构定义 =====================
@@ -30,7 +30,7 @@ let hashTable = new Array(HASH_LEN).fill(null);
 let studentCount = 0;
 let editIndex = -1;
 
-// ===================== 核心数据结构算法（完全保留） =====================
+// ===================== 核心算法 =====================
 function getKey(name) {
     let sum = 0;
     for (let i = 0; i < name.length; i++) {
@@ -47,7 +47,7 @@ function rehash(addr, key) {
     return (addr + key) % M;
 }
 
-// ===================== 从云端加载数据，构建本地哈希表（已修复bug） =====================
+// ===================== 从云端加载数据 =====================
 async function loadDataFromCloud() {
     try {
         const res = await fetch(`${BACKEND_URL}/api/students`);
@@ -58,17 +58,14 @@ async function loadDataFromCloud() {
             return false;
         }
 
-        // 重置哈希表
         hashTable = new Array(HASH_LEN).fill(null);
         studentCount = result.data.length;
         
-        // 重新模拟插入过程，100%正确还原哈希表结构
         result.data.forEach(item => {
             const key = item.k;
             let addr = hashFunc(key);
             let searchLen = 1;
             
-            // 用再哈希法找空位，和插入逻辑完全一致
             while (hashTable[addr] !== null) {
                 addr = rehash(addr, key);
                 searchLen++;
@@ -97,26 +94,151 @@ function addLog(content) {
     localStorage.setItem(LOG_KEY, JSON.stringify(logList));
 }
 
-// ===================== 业务功能实现 =====================
-async function insertOrVote(name, major, gradeYear, story) {
-    try {
-        const res = await fetch(`${BACKEND_URL}/api/vote`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, major, gradeYear, story })
+// ===================== 投票提交（封装） =====================
+async function submitVote(name, major, gradeYear, story, confirm) {
+    const res = await fetch(`${BACKEND_URL}/api/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, major, gradeYear, story, confirm })
+    });
+    const result = await res.json();
+    if (result.success) {
+        await loadDataFromCloud();
+        addLog(result.type === 'vote' 
+            ? `🗳️ 为 ${name}（${major} ${gradeYear}级）投票` 
+            : `📝 提名新学生：${name}（${major} ${gradeYear}级）`);
+    }
+    return result;
+}
+
+// ===================== 提名/投票页面 =====================
+async function handleVote() {
+    const name = document.getElementById('voteName').value.trim();
+    const major = document.getElementById('voteMajor').value;
+    const gradeYear = parseInt(document.getElementById('voteGrade').value);
+    const story = document.getElementById('voteStory').value.trim();
+    const resultEl = document.getElementById('voteResult');
+
+    if (!name) {
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：姓名不能为空！</span>';
+        return;
+    }
+    if (isNaN(gradeYear) || gradeYear < 2020 || gradeYear > 2030) {
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：请输入正确的入学年级（2020-2030）！</span>';
+        return;
+    }
+
+    resultEl.innerHTML = '<span>⏳ 提交中...</span>';
+    const res = await submitVote(name, major, gradeYear, story, false);
+    
+    if (res.needConfirm) {
+        let infoText = res.msg + '\n\n已存在的同名学生信息：\n';
+        res.sameNameList.forEach(s => {
+            infoText += `  • ${s.py}（${s.major} ${s.grade_year}级）\n`;
         });
-        const result = await res.json();
+        infoText += '\n是否确认添加这位新的同名学生？';
         
-        if (result.success) {
-            // 操作成功后，重新从云端拉取最新数据
-            await loadDataFromCloud();
-            addLog(result.type === 'vote' 
-                ? `🗳️ 为 ${name}（${major} ${gradeYear}级）投票` 
-                : `📝 提名新学生：${name}（${major} ${gradeYear}级）`);
+        if (confirm(infoText)) {
+            const confirmRes = await submitVote(name, major, gradeYear, story, true);
+            resultEl.innerHTML = `<span style="color:${confirmRes.success ? 'green' : 'red'}">${confirmRes.msg}</span>`;
+            if (confirmRes.success) {
+                document.getElementById('voteName').value = '';
+                document.getElementById('voteGrade').value = '';
+                document.getElementById('voteStory').value = '';
+                showAllVotes();
+            }
+        } else {
+            resultEl.innerHTML = '<span style="color:#999">已取消提名</span>';
         }
-        return result;
+    } else {
+        resultEl.innerHTML = `<span style="color:${res.success ? 'green' : 'red'}">${res.msg}</span>`;
+        if (res.success) {
+            document.getElementById('voteName').value = '';
+            document.getElementById('voteGrade').value = '';
+            document.getElementById('voteStory').value = '';
+            showAllVotes();
+        }
+    }
+}
+
+// ===================== 快速投票功能 =====================
+function renderQuickVoteList() {
+    const nameKey = document.getElementById('quickSearchName').value.trim();
+    const majorVal = document.getElementById('quickFilterMajor').value;
+    const gradeVal = document.getElementById('quickFilterGrade').value;
+    let { list } = getAllStudents(nameKey, majorVal);
+    
+    if (gradeVal) {
+        list = list.filter(item => item.data.gradeYear == gradeVal);
+    }
+    list.sort((a, b) => b.data.vote - a.data.vote);
+
+    const container = document.getElementById('quickVoteList');
+    if (list.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:30px;">暂无匹配的学生</p>';
+        return;
+    }
+
+    let html = '';
+    list.forEach(item => {
+        html += `
+            <div class="quick-vote-card">
+                <div class="vote-info">
+                    <div class="vote-name">${item.data.py}</div>
+                    <div class="vote-meta">${item.data.major} · ${item.data.gradeYear}级 · 当前 ${item.data.vote} 票</div>
+                </div>
+                <button class="vote-btn" onclick="quickVote('${item.data.py}','${item.data.major}',${item.data.gradeYear})">
+                    🗳️ 投票
+                </button>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+async function quickVote(name, major, gradeYear) {
+    try {
+        const res = await submitVote(name, major, gradeYear, '', false);
+        alert(res.msg);
+        if (res.success) {
+            await loadDataFromCloud();
+            renderQuickVoteList();
+            showAllVotes();
+            showRank();
+        }
     } catch (e) {
-        return { success: false, msg: '❌ 连接服务器失败，请稍后重试' };
+        alert('❌ 投票失败，请稍后重试');
+    }
+}
+
+// ===================== 查询功能 =====================
+function handleSearch() {
+    const name = document.getElementById('searchName').value.trim();
+    const major = document.getElementById('searchMajor').value;
+    const gradeYear = parseInt(document.getElementById('searchGrade').value);
+    const resultEl = document.getElementById('searchResult');
+
+    if (!name) {
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：姓名不能为空！</span>';
+        return;
+    }
+    if (isNaN(gradeYear) || gradeYear < 2020 || gradeYear > 2030) {
+        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：请输入正确的入学年级！</span>';
+        return;
+    }
+
+    const res = findStudent(name, major, gradeYear);
+    if (res.success) {
+        const d = res.data;
+        resultEl.innerHTML = `
+            <p><strong>👤 姓名：</strong>${d.py}</p>
+            <p><strong>🎓 专业：</strong>${d.major}</p>
+            <p><strong>📅 年级：</strong>${d.gradeYear}级</p>
+            <p><strong>🗳️ 当前票数：</strong>${d.vote}票</p>
+            <p><strong>📝 突出事迹：</strong>${d.story || '暂无'}</p>
+        `;
+    } else {
+        resultEl.innerHTML = `<span style="color:red">${res.msg}</span>`;
     }
 }
 
@@ -178,7 +300,7 @@ async function updateStudent(index, major, gradeYear, story) {
     }
 }
 
-// ===================== 二叉排序树排行榜（完全保留） =====================
+// ===================== 二叉排序树排行榜 =====================
 function insertBST(hashNode, root) {
     if (root === null) {
         return new BSTNode(hashNode);
@@ -223,7 +345,7 @@ function getRank() {
     return rankList;
 }
 
-// ===================== 页面交互逻辑 =====================
+// ===================== 菜单切换 =====================
 document.querySelectorAll('.menu-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -235,73 +357,17 @@ document.querySelectorAll('.menu-btn').forEach(btn => {
         if (btn.dataset.tab === 'hash') showHashTable();
         if (btn.dataset.tab === 'log') showLog();
         if (btn.dataset.tab === 'rank') showRank();
+        if (btn.dataset.tab === 'quickVote') renderQuickVoteList();
     });
 });
 
-async function handleVote() {
-    const name = document.getElementById('voteName').value.trim();
-    const major = document.getElementById('voteMajor').value;
-    const gradeYear = parseInt(document.getElementById('voteGrade').value);
-    const story = document.getElementById('voteStory').value.trim();
-    const resultEl = document.getElementById('voteResult');
-
-    if (!name) {
-        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：姓名不能为空！</span>';
-        return;
-    }
-    if (isNaN(gradeYear) || gradeYear < 2020 || gradeYear > 2030) {
-        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：请输入正确的入学年级（2020-2030）！</span>';
-        return;
-    }
-
-    resultEl.innerHTML = '<span>⏳ 提交中...</span>';
-    const res = await insertOrVote(name, major, gradeYear, story);
-    resultEl.innerHTML = `<span style="color:${res.success ? 'green' : 'red'}">${res.msg}</span>`;
-    
-    document.getElementById('voteName').value = '';
-    document.getElementById('voteGrade').value = '';
-    document.getElementById('voteStory').value = '';
-    showAllVotes();
-}
-
-function handleSearch() {
-    const name = document.getElementById('searchName').value.trim();
-    const major = document.getElementById('searchMajor').value;
-    const gradeYear = parseInt(document.getElementById('searchGrade').value);
-    const resultEl = document.getElementById('searchResult');
-
-    if (!name) {
-        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：姓名不能为空！</span>';
-        return;
-    }
-    if (isNaN(gradeYear) || gradeYear < 2020 || gradeYear > 2030) {
-        resultEl.innerHTML = '<span style="color:red">❌ 输入错误：请输入正确的入学年级！</span>';
-        return;
-    }
-
-    const res = findStudent(name, major, gradeYear);
-    if (res.success) {
-        const d = res.data;
-        resultEl.innerHTML = `
-            <p><strong>👤 姓名：</strong>${d.py}</p>
-            <p><strong>🎓 专业：</strong>${d.major}</p>
-            <p><strong>📅 年级：</strong>${d.gradeYear}级</p>
-            <p><strong>🗳️ 当前票数：</strong>${d.vote}票</p>
-            <p><strong>📝 突出事迹：</strong>${d.story || '暂无'}</p>
-        `;
-    } else {
-        resultEl.innerHTML = `<span style="color:red">${res.msg}</span>`;
-    }
-}
-
-// ===================== 全量票数统计（新增排序功能） =====================
+// ===================== 全量票数统计 =====================
 function showAllVotes() {
     const filterName = document.getElementById('filterName').value.trim();
     const filterMajor = document.getElementById('filterMajor').value;
     const sortBy = document.getElementById('sortBy').value;
     let { list, asl, loadFactor, totalConflict } = getAllStudents(filterName, filterMajor);
     
-    // 根据选择的方式排序
     list.sort((a, b) => {
         switch(sortBy) {
             case 'vote-desc':
@@ -466,6 +532,7 @@ async function resetSystem() {
         await fetch(`${BACKEND_URL}/api/reset`, { method: 'POST' });
         await loadDataFromCloud();
         showAllVotes();
+        showRank();
         addLog('🔄 系统重置，恢复初始数据');
         alert('✅ 系统已重置！');
     } catch (e) {
@@ -485,10 +552,12 @@ window.onload = async function() {
     showAllVotes();
     showRank();
     
-    // 每5秒自动从云端拉取最新数据，实现多人同步
     setInterval(async () => {
         await loadDataFromCloud();
         showAllVotes();
         showRank();
+        if (document.getElementById('quickVote').classList.contains('active')) {
+            renderQuickVoteList();
+        }
     }, 5000);
 };
