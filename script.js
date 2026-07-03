@@ -161,7 +161,7 @@ async function handleVote() {
     }
 }
 
-// ===================== 快速投票功能 =====================
+// ===================== 快速投票功能（已优化UI） =====================
 function renderQuickVoteList() {
     const nameKey = document.getElementById('quickSearchName').value.trim();
     const majorVal = document.getElementById('quickFilterMajor').value;
@@ -175,21 +175,33 @@ function renderQuickVoteList() {
 
     const container = document.getElementById('quickVoteList');
     if (list.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#999;padding:30px;">暂无匹配的学生</p>';
+        container.innerHTML = '<div class="empty-tip">🔍 暂无匹配的学生</div>';
         return;
     }
 
     let html = '';
     list.forEach(item => {
         html += `
-            <div class="quick-vote-card">
-                <div class="vote-info">
-                    <div class="vote-name">${item.data.py}</div>
-                    <div class="vote-meta">${item.data.major} · ${item.data.gradeYear}级 · 当前 ${item.data.vote} 票</div>
+            <div class="vote-card">
+                <div class="card-left">
+                    <div class="avatar">${item.data.py.charAt(0)}</div>
+                    <div class="card-info">
+                        <div class="card-name">${item.data.py}</div>
+                        <div class="card-tags">
+                            <span class="tag tag-major">${item.data.major}</span>
+                            <span class="tag tag-grade">${item.data.gradeYear}级</span>
+                        </div>
+                    </div>
                 </div>
-                <button class="vote-btn" onclick="quickVote('${item.data.py}','${item.data.major}',${item.data.gradeYear})">
-                    🗳️ 投票
-                </button>
+                <div class="card-right">
+                    <div class="vote-count">
+                        <span class="count-num">${item.data.vote}</span>
+                        <span class="count-label">票</span>
+                    </div>
+                    <button class="vote-btn" onclick="quickVote('${item.data.py}','${item.data.major}',${item.data.gradeYear})">
+                        投票
+                    </button>
+                </div>
             </div>
         `;
     });
